@@ -112,4 +112,8 @@ void log_raw_split(const gchar *head, gboolean from_server, guint con_id, GStrin
 /* debug-fastcgi.c */
 void setup_debug_fastcgi(connection *con);
 
+static inline const char* from_server_to_string(gboolean from_server) {
+	return from_server ? "webserver" : "application";
+}
+
 #endif

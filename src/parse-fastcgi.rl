@@ -67,13 +67,13 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		guint8 flags;
 		if (ctx->FCGI_Record.contentLength != 8) {
 			g_print("wrong FCGI_BEGIN_REQUEST size from %s (%u): %u\n",
-				ctx->from_server ? "server" : "client", ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
 		role = (p[0] << 8) | p[1];
 		flags = p[2];
 		g_print("begin request from %s (%u): role: %s, flags: %s\n",
-			ctx->from_server ? "server" : "client", ctx->con_id,
+			from_server_to_string(ctx->from_server), ctx->con_id,
 			fcgi_role2string(role),
 			fcgi_flags2string(flags)
 		);
@@ -82,11 +82,11 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_ABORT_REQUEST: {
 		if (ctx->FCGI_Record.contentLength) {
 			g_print("wrong FCGI_ABORT_REQUEST size from %s (%u): %u\n",
-				ctx->from_server ? "server" : "client", ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
 		g_print("abort request from %s (%u)\n",
-			ctx->from_server ? "server" : "client", ctx->con_id);
+			from_server_to_string(ctx->from_server), ctx->con_id);
 		break;
 	}
 	case FCGI_END_REQUEST: {
@@ -94,13 +94,13 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		guint8 protocolStatus;
 		if (ctx->FCGI_Record.contentLength != 8) {
 			g_print("wrong FCGI_END_REQUEST size from %s (%u): %u\n",
-				ctx->from_server ? "server" : "client", ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
 		appStatus = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 		protocolStatus = p[4];
 		g_print("end request from %s (%u): applicationStatus: %u, protocolStatus: %s\n",
-			ctx->from_server ? "server" : "client", ctx->con_id,
+			from_server_to_string(ctx->from_server), ctx->con_id,
 			appStatus,
 			fcgi_protocol_status2string(protocolStatus)
 		);
@@ -111,7 +111,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("params end from %s (%u)%s\n",
-				ctx->from_server ? "server" : "client", ctx->con_id, ctx->s_params->len ? " (unexpected)" : "");
+				from_server_to_string(ctx->from_server), ctx->con_id, ctx->s_params->len ? " (unexpected)" : "");
 			return;
 		}
 		USE_STREAM(s_params, p, pe);
@@ -122,7 +122,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			s1 = g_string_escape(g_string_set_const(&tmp1, (gchar*) p, len1));
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
 			g_print("param from %s (%u): '%s' = '%s'\n",
-				ctx->from_server ? "server" : "client", ctx->con_id,
+				from_server_to_string(ctx->from_server), ctx->con_id,
 				s1->str, s2->str);
 			g_string_free(s1, TRUE);
 			g_string_free(s2, TRUE);
@@ -134,7 +134,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_STDIN:
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("stdin closed from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		log_raw_split("stdin", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
@@ -142,7 +142,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_STDOUT:
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("stdout closed from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		log_raw_split("stdout", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
@@ -150,7 +150,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_STDERR:
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("stderr closed from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		log_raw_split("stderr", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
@@ -158,7 +158,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_DATA:
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("data closed from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		log_raw_split("data", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
@@ -169,7 +169,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("empty get values from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		while (get_key_value_pair_len(&p, pe, &len1, &len2)) {
@@ -180,11 +180,11 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
 			if (len2) {
 				g_print("get values from %s (%u): '%s' = '%s'?\n",
-					ctx->from_server ? "server" : "client", ctx->con_id,
+					from_server_to_string(ctx->from_server), ctx->con_id,
 					s1->str, s2->str);
 			} else {
 				g_print("get values from %s (%u): '%s'\n",
-					ctx->from_server ? "server" : "client", ctx->con_id,
+					from_server_to_string(ctx->from_server), ctx->con_id,
 					s1->str);
 			}
 			g_string_free(s1, TRUE);
@@ -193,7 +193,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		if (p != pe) {
 			g_print("unexpected end of get values from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 		}
 		break;
 	}
@@ -203,7 +203,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
 			g_print("empty get values result from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 			return;
 		}
 		while (get_key_value_pair_len(&p, pe, &len1, &len2)) {
@@ -213,7 +213,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			s1 = g_string_escape(g_string_set_const(&tmp1, (gchar*) p, len1));
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
 			g_print("get values result from %s (%u): '%s' = '%s'\n",
-				ctx->from_server ? "server" : "client", ctx->con_id,
+				from_server_to_string(ctx->from_server), ctx->con_id,
 				s1->str, s2->str);
 			g_string_free(s1, TRUE);
 			g_string_free(s2, TRUE);
@@ -221,7 +221,7 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		if (p != pe) {
 			g_print("unexpected end of get values result from %s (%u)\n",
-				ctx->from_server ? "server" : "client", ctx->con_id);
+				from_server_to_string(ctx->from_server), ctx->con_id);
 		}
 		break;
 	}
@@ -229,16 +229,16 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	case FCGI_UNKNOWN_TYPE:
 		if (ctx->FCGI_Record.contentLength != 8) {
 			g_print("wrong FCGI_UNKNOWN_TYPE size from %s (%u): %u\n",
-				ctx->from_server ? "server" : "client", ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
 		g_print("unknown type %u from %s (%u)\n", (guint) p[0],
-			ctx->from_server ? "server" : "client", ctx->con_id);
+			from_server_to_string(ctx->from_server), ctx->con_id);
 		break;
 	
 	default:
 		g_print("packet from %s (%u): type: %s, id: 0x%x, contentLength: 0x%x\n",
-			ctx->from_server ? "server" : "client", ctx->con_id,
+			from_server_to_string(ctx->from_server), ctx->con_id,
 			fcgi_type2string(ctx->FCGI_Record.type),
 			(guint) ctx->FCGI_Record.requestID,
 			(guint) ctx->FCGI_Record.contentLength

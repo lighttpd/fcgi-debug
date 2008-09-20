@@ -46,7 +46,7 @@ static char readbuf[4096];
 static void fd_server_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 	connection *con = (connection*) w->data;
 	server *srv = con->srv;
-	GString s;
+// 	GString s;
 	UNUSED(loop);
 
 	if (revents & EV_READ) {
@@ -74,7 +74,7 @@ static void fd_server_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 static void fd_client_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 	connection *con = (connection*) w->data;
 	server *srv = con->srv;
-	GString s;
+// 	GString s;
 	UNUSED(loop);
 	if (!connection_connect(con)) return;
 
