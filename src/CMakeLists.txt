@@ -9,6 +9,7 @@ INCLUDE(CPack)
 INCLUDE(FindPkgConfig)
 
 INCLUDE(LighttpdMacros)
+FIND_PACKAGE(Ragel REQUIRED)
 cmake_policy(SET CMP0005 OLD)
 
 ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES)
@@ -42,12 +43,17 @@ ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
+RAGEL_PARSER(parse-fastcgi.rl)
+
 ADD_EXECUTABLE(fcgi-debug
 	fcgi-debug.c
 	connection.c
 	tools.c
 	stream.c
 	log.c
+
+	debug-fastcgi.c
+	parse-fastcgi.c
 )
 
 ADD_TARGET_PROPERTIES(fcgi-debug LINK_FLAGS ${EV_LDFLAGS})

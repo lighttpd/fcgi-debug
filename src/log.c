@@ -1,6 +1,6 @@
 #include "fcgi-debug.h"
 
-void log_raw(const gchar *head, guint con_id, GString *data) {
+void log_raw_split(const gchar *head, gboolean from_server, guint con_id, GString *data) {
 	const gchar *start = data->str, *end = start+data->len, *i;
 	GString *line = g_string_sized_new(0);
 	for ( ; start < end; ) {
@@ -30,8 +30,14 @@ void log_raw(const gchar *head, guint con_id, GString *data) {
 				g_string_append_c(line, c);
 			}
 		}
-		g_print("%s (%u): %s\n", head, con_id, line->str);
+		g_print("%s from %s (%u): %s\n", head, from_server ? "server" : "client", con_id, line->str);
 		start = i;
 	}
+	g_string_free(line, TRUE);
+}
+
+void log_raw(const gchar *head, gboolean from_server, guint con_id, GString *data) {
+	GString *line = g_string_escape(data);
+	g_print("%s from %s (%u): %s\n", head, from_server ? "server" : "client", con_id, line->str);
 	g_string_free(line, TRUE);
 }

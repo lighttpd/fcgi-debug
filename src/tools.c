@@ -55,3 +55,25 @@ GString* g_string_set_const(GString* s, const gchar *data, gsize len) {
 	s->len = len;
 	return s;
 }
+
+GString* g_string_escape(GString *data) {
+	GString *s = g_string_sized_new(0);
+	const gchar *start = data->str, *end = start+data->len, *i;
+	for (i = start; i < end; i++) {
+		guchar c = *i;
+		if (c == '\n') {
+			g_string_append_len(s, "\\n", 2);
+		} else if (c == '\r') {
+			g_string_append_len(s, "\\r", 2);
+		} else if (c < 0x20 || c >= 0x80) {
+			static char hex[5] = "\\x00";
+			hex[3] = ((c & 0xF) < 10) ? '0' + (c & 0xF) : 'A' + (c & 0xF) - 10;
+			c /= 16;
+			hex[2] = ((c & 0xF) < 10) ? '0' + (c & 0xF) : 'A' + (c & 0xF) - 10;
+			g_string_append_len(s, hex, 4);
+		} else {
+			g_string_append_c(s, c);
+		}
+	}
+	return s;
+}

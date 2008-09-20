@@ -1,3 +1,5 @@
+#ifndef FCGI_DEBUG_H
+#define FCGI_DEBUG_H
 
 #include <ev.h>
 #include <glib.h>
@@ -61,10 +63,17 @@ struct stream {
 	GString *buffer;
 };
 
+typedef void (*DebugAppend)(gpointer ctx, const gchar *buf, gssize buflen);
+typedef void (*DebugFree)(gpointer ctx);
+
 struct connection {
 	server *srv;
 	guint con_id;
 	stream s_server, s_client;
+	gpointer ctx_server, ctx_client;
+	DebugAppend da_server, da_client;
+	DebugFree df_server, df_client;
+	
 	gboolean client_connected;
 };
 
@@ -79,6 +88,7 @@ void ev_io_rem_events(struct ev_loop *loop, ev_io *watcher, int events);
 void ev_io_set_events(struct ev_loop *loop, ev_io *watcher, int events);
 
 GString* g_string_set_const(GString* s, const gchar *data, gsize len);
+GString* g_string_escape(GString *data);
 
 /* connection.c */
 void connection_new(server *srv, int fd_server);
@@ -96,4 +106,10 @@ void stream_append(server *srv, stream *s, char *buf, gssize bufsize);
 gssize stream_write(server *srv, stream *s);
 
 /* log.c */
-void log_raw(const gchar *head, guint con_id, GString *data);
+void log_raw(const gchar *head, gboolean from_server, guint con_id, GString *data);
+void log_raw_split(const gchar *head, gboolean from_server, guint con_id, GString *data);
+
+/* debug-fastcgi.c */
+void setup_debug_fastcgi(connection *con);
+
+#endif

@@ -2,6 +2,14 @@
 
 static void connection_close(connection *con) {
 	stream_close(con->srv, &con->s_server, &con->s_client);
+	if (con->df_server) {
+		con->df_server(con->ctx_server);
+		con->df_server = NULL;
+	}
+	if (con->df_client) {
+		con->df_client(con->ctx_client);
+		con->df_client = NULL;
+	}
 	g_slice_free(connection, con);
 }
 
@@ -48,8 +56,11 @@ static void fd_server_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 			connection_close(con);
 			return;
 		}
-		log_raw("raw from server", con->con_id, g_string_set_const(&s, readbuf, len));
+// 		log_raw("raw", TRUE, con->con_id, g_string_set_const(&s, readbuf, len));
 		stream_append(srv, &con->s_client, readbuf, len);
+		if (con->da_server) {
+			con->da_server(con->ctx_server, readbuf, len);
+		}
 	}
 	if (revents & EV_WRITE) {
 		if (-1 == stream_write(srv, &con->s_server)) {
@@ -74,8 +85,11 @@ static void fd_client_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 			connection_close(con);
 			return;
 		}
-		log_raw("raw from client", con->con_id, g_string_set_const(&s, readbuf, len));
+// 		log_raw("raw", FALSE, con->con_id, g_string_set_const(&s, readbuf, len));
 		stream_append(srv, &con->s_server, readbuf, len);
+		if (con->da_client) {
+			con->da_client(con->ctx_client, readbuf, len);
+		}
 	}
 	if (revents & EV_WRITE) {
 		if (-1 == stream_write(srv, &con->s_client)) {
@@ -104,5 +118,6 @@ void connection_new(server *srv, int fd_server) {
 	con->client_connected = FALSE;
 	g_print("new connection (%u)\n", con->con_id);
 	stream_init(srv, &con->s_server, &con->s_client, fd_server, fd_client, fd_server_cb, fd_client_cb, con);
+	setup_debug_fastcgi(con);
 	connection_connect(con);
 }
