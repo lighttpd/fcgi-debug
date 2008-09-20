@@ -49,3 +49,9 @@ void ev_io_set_events(struct ev_loop *loop, ev_io *watcher, int events) {
 	ev_io_set(watcher, watcher->fd, (watcher->events & ~(EV_READ | EV_WRITE)) | events);
 	ev_io_start(loop, watcher);
 }
+
+GString* g_string_set_const(GString* s, const gchar *data, gsize len) {
+	s->str = (gchar*) data;
+	s->len = len;
+	return s;
+}

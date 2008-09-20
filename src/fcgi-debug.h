@@ -13,11 +13,16 @@
 
 #define UNUSED(x) ( (void)(x) )
 
+#define MAX_STREAM_BUF_SIZE (128*1024)
+
 struct addr;
 typedef struct addr addr;
 
 struct server;
 typedef struct server server;
+
+struct stream;
+typedef struct stream stream;
 
 struct connection;
 typedef struct connection connection;
@@ -29,6 +34,8 @@ struct addr {
 
 struct server {
 	struct ev_loop *loop;
+
+	guint next_con_id;
 
 	ev_signal
 		sig_w_INT,
@@ -47,13 +54,18 @@ struct server {
 	gboolean exiting, stopped_signals;
 };
 
+struct stream {
+	stream *other;
+	int fd;
+	ev_io watcher;
+	GString *buffer;
+};
+
 struct connection {
 	server *srv;
-	int fd_server, fd_client;
-	ev_io w_server, w_client;
+	guint con_id;
+	stream s_server, s_client;
 	gboolean client_connected;
-
-	GString *send_client_buf, *send_server_buf;
 };
 
 
@@ -66,5 +78,22 @@ void ev_io_add_events(struct ev_loop *loop, ev_io *watcher, int events);
 void ev_io_rem_events(struct ev_loop *loop, ev_io *watcher, int events);
 void ev_io_set_events(struct ev_loop *loop, ev_io *watcher, int events);
 
+GString* g_string_set_const(GString* s, const gchar *data, gsize len);
+
 /* connection.c */
 void connection_new(server *srv, int fd_server);
+
+/* stream.c */
+typedef void (*ev_io_cb)(struct ev_loop *loop, ev_io *w, int revents);
+
+void stream_init(server *srv, stream *s1, stream *s2, int fd1, int fd2, ev_io_cb cb1, ev_io_cb cb2, void* data);
+void stream_close(server *srv, stream *s1, stream *s2);
+void stream_clean(server *srv, stream *s1, stream *s2);
+void stream_start(server *srv, stream *s);
+
+gssize stream_read(server *srv, stream *s, char *buf, gssize bufsize);
+void stream_append(server *srv, stream *s, char *buf, gssize bufsize);
+gssize stream_write(server *srv, stream *s);
+
+/* log.c */
+void log_raw(const gchar *head, guint con_id, GString *data);

@@ -46,6 +46,8 @@ ADD_EXECUTABLE(fcgi-debug
 	fcgi-debug.c
 	connection.c
 	tools.c
+	stream.c
+	log.c
 )
 
 ADD_TARGET_PROPERTIES(fcgi-debug LINK_FLAGS ${EV_LDFLAGS})
