@@ -61,6 +61,7 @@ struct stream {
 	int fd;
 	ev_io watcher;
 	GString *buffer;
+	gboolean closed;
 };
 
 typedef void (*DebugAppend)(gpointer ctx, const gchar *buf, gssize buflen);
