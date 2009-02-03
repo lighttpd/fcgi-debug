@@ -11,7 +11,7 @@ For running you probably want spawn-fcgi (either from lighttpd, or from https://
 .SH EXAMPLE
 Example usage (starts a fastcgi server listening on port 1026):
 
-spawn-fcgi -C 0 -p 1026 -n -- fcgi-debug /usr/bin/php5-cgi
+spawn-fcgi -C 0 -p 1026 -n -- /usr/bin/fcgi-debug /usr/bin/php5-cgi
 .SH AUTHOR
 fcgi-debug was written by Stefan Bühler.
 .PP
