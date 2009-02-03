@@ -6,6 +6,7 @@ Build Requires:
   glib2
   libev
   cmake
+  ragel
 
 For running you probably want spawn-fcgi (either from lighttpd, or from https://cgit.stbuehler.de/gitosis/spawn-fcgi/about/)
 
