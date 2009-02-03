@@ -15,10 +15,11 @@ static void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 }
 
 #define CATCH_SIGNAL(loop, cb, n) do {\
-	ev_init(&srv->sig_w_##n, cb); \
-	ev_signal_set(&srv->sig_w_##n, SIG##n); \
-	ev_signal_start(loop, &srv->sig_w_##n); \
-	srv->sig_w_##n.data = srv; \
+	struct ev_signal *ws = &srv->sig_w_##n; \
+	ev_init(ws, cb); \
+	ev_signal_set(ws, SIG##n); \
+	ev_signal_start(loop, ws); \
+	ws->data = srv; \
 	ev_unref(loop); /* Signal watchers shouldn't keep loop alive */ \
 } while (0)
 
@@ -170,13 +171,19 @@ int main(int argc, char **argv) {
 	ch = spawn(argv, s);
 
 	srv->child = ch;
-	ev_child_init(&srv->w_child, child_cb, ch, 0);
-	srv->w_child.data = srv;
+	{
+		ev_child *w = &srv->w_child;
+		ev_child_init(w, child_cb, ch, 0);
+		w->data = srv;
+	}
 	ev_child_start(srv->loop, &srv->w_child);
 
 	fd_init(0);
-	ev_io_init(&srv->w_accept, accept_cb, 0, EV_READ);
-	srv->w_accept.data = srv;
+	{
+		ev_io *w = &srv->w_accept;
+		ev_io_init(w, accept_cb, 0, EV_READ);
+		w->data = srv;
+	}
 	ev_io_start(srv->loop, &srv->w_accept);
 
 	ev_loop(srv->loop, 0);
