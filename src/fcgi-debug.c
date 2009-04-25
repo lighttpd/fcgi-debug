@@ -28,7 +28,7 @@ static void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 	ev_signal_stop(loop, &srv->sig_w_##n); \
 } while (0)
 
-void server_stop(server *srv) {
+static void server_stop(server *srv) {
 	if (srv->tmpfile_name) {
 		unlink(srv->tmpfile_name);
 		g_free(srv->tmpfile_name);
@@ -88,7 +88,7 @@ static void sigpipe_cb(struct ev_loop *loop, struct ev_signal *w, int revents) {
 	UNUSED(loop); UNUSED(w); UNUSED(revents);
 }
 
-void create_tmp_addr(server *srv) {
+static void create_tmp_addr(server *srv) {
 	gchar *fn = g_strdup("/tmp/fcgi-debug.XXXXXX");
 	int fd;
 
@@ -110,7 +110,7 @@ void create_tmp_addr(server *srv) {
 	srv->client.addr_len = len;
 }
 
-int client_bind(server *srv) {
+static int client_bind(server *srv) {
 	int s;
 
 	if (-1 == (s = socket(AF_UNIX, SOCK_STREAM, 0))) {
@@ -128,7 +128,7 @@ int client_bind(server *srv) {
 	return s;
 }
 
-pid_t spawn(char **argv, int s) {
+static pid_t spawn(char **argv, int s) {
 	pid_t child;
 
 	switch (child = fork()) {

@@ -56,7 +56,7 @@ static gboolean get_key_value_pair_len(guint8 **_p, guint8 *pe, guint *_len1, gu
 	return TRUE;
 }
 
-void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
+static void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	guint8 *eof = pe;
 	GString tmp1, tmp2;
 	UNUSED(eof);
@@ -70,10 +70,14 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
+		if (0 == ctx->FCGI_Record.requestID) {
+			g_print("invalid requestID from %s (%u): %u\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
+		}
 		role = (p[0] << 8) | p[1];
 		flags = p[2];
-		g_print("begin request from %s (%u): role: %s, flags: %s\n",
-			from_server_to_string(ctx->from_server), ctx->con_id,
+		g_print("begin request from %s (%u, %u): role: %s, flags: %s\n",
+			from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 			fcgi_role2string(role),
 			fcgi_flags2string(flags)
 		);
@@ -81,12 +85,13 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	}
 	case FCGI_ABORT_REQUEST: {
 		if (ctx->FCGI_Record.contentLength) {
-			g_print("wrong FCGI_ABORT_REQUEST size from %s (%u): %u\n",
-				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+			g_print("wrong FCGI_ABORT_REQUEST size from %s (%u, %u): %u\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength,
+					(guint) ctx->FCGI_Record.requestID);
 			return;
 		}
-		g_print("abort request from %s (%u)\n",
-			from_server_to_string(ctx->from_server), ctx->con_id);
+		g_print("abort request from %s (%u, %u)\n",
+			from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 		break;
 	}
 	case FCGI_END_REQUEST: {
@@ -99,8 +104,8 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		appStatus = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 		protocolStatus = p[4];
-		g_print("end request from %s (%u): applicationStatus: %u, protocolStatus: %s\n",
-			from_server_to_string(ctx->from_server), ctx->con_id,
+		g_print("end request from %s (%u, %u): applicationStatus: %u, protocolStatus: %s\n",
+			from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 			appStatus,
 			fcgi_protocol_status2string(protocolStatus)
 		);
@@ -110,8 +115,9 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		guint len1, len2;
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("params end from %s (%u)%s\n",
-				from_server_to_string(ctx->from_server), ctx->con_id, ctx->s_params->len ? " (unexpected)" : "");
+			g_print("params end from %s (%u, %u)%s\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
+				ctx->s_params->len ? " (unexpected)" : "");
 			return;
 		}
 		USE_STREAM(s_params, p, pe);
@@ -121,8 +127,8 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			}
 			s1 = g_string_escape(g_string_set_const(&tmp1, (gchar*) p, len1));
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
-			g_print("param from %s (%u): '%s' = '%s'\n",
-				from_server_to_string(ctx->from_server), ctx->con_id,
+			g_print("param from %s (%u, %u): '%s' = '%s'\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 				s1->str, s2->str);
 			g_string_free(s1, TRUE);
 			g_string_free(s2, TRUE);
@@ -133,43 +139,43 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 	}
 	case FCGI_STDIN:
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("stdin closed from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("stdin closed from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
-		log_raw_split("stdin", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
+		log_raw_split("stdin", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
 	case FCGI_STDOUT:
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("stdout closed from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("stdout closed from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
-		log_raw_split("stdout", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
+		log_raw_split("stdout", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
 	case FCGI_STDERR:
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("stderr closed from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("stderr closed from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
-		log_raw_split("stderr", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
+		log_raw_split("stderr", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
 	case FCGI_DATA:
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("data closed from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("data closed from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
-		log_raw_split("data", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
+		log_raw_split("data", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
 	
 	case FCGI_GET_VALUES: {
 		guint len1, len2;
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("empty get values from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("empty get values from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
 		while (get_key_value_pair_len(&p, pe, &len1, &len2)) {
@@ -179,12 +185,12 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			s1 = g_string_escape(g_string_set_const(&tmp1, (gchar*) p, len1));
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
 			if (len2) {
-				g_print("get values from %s (%u): '%s' = '%s'?\n",
-					from_server_to_string(ctx->from_server), ctx->con_id,
+				g_print("get values from %s (%u, %u): '%s' = '%s'?\n",
+					from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 					s1->str, s2->str);
 			} else {
-				g_print("get values from %s (%u): '%s'\n",
-					from_server_to_string(ctx->from_server), ctx->con_id,
+				g_print("get values from %s (%u, %u): '%s'\n",
+					from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 					s1->str);
 			}
 			g_string_free(s1, TRUE);
@@ -192,8 +198,8 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			p += len1 + len2;
 		}
 		if (p != pe) {
-			g_print("unexpected end of get values from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("unexpected end of get values from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 		}
 		break;
 	}
@@ -202,8 +208,8 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		guint len1, len2;
 		GString *s1, *s2;
 		if (!ctx->FCGI_Record.contentLength) {
-			g_print("empty get values result from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("empty get values result from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 			return;
 		}
 		while (get_key_value_pair_len(&p, pe, &len1, &len2)) {
@@ -212,38 +218,38 @@ void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 			}
 			s1 = g_string_escape(g_string_set_const(&tmp1, (gchar*) p, len1));
 			s2 = g_string_escape(g_string_set_const(&tmp2, (gchar*) p+len1, len2));
-			g_print("get values result from %s (%u): '%s' = '%s'\n",
-				from_server_to_string(ctx->from_server), ctx->con_id,
+			g_print("get values result from %s (%u, %u): '%s' = '%s'\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID,
 				s1->str, s2->str);
 			g_string_free(s1, TRUE);
 			g_string_free(s2, TRUE);
 			p += len1 + len2;
 		}
 		if (p != pe) {
-			g_print("unexpected end of get values result from %s (%u)\n",
-				from_server_to_string(ctx->from_server), ctx->con_id);
+			g_print("unexpected end of get values result from %s (%u, %u)\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 		}
 		break;
 	}
 	
 	case FCGI_UNKNOWN_TYPE:
 		if (ctx->FCGI_Record.contentLength != 8) {
-			g_print("wrong FCGI_UNKNOWN_TYPE size from %s (%u): %u\n",
-				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.contentLength);
+			g_print("wrong FCGI_UNKNOWN_TYPE size from %s (%u, %u): %u\n",
+				from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID, (guint) ctx->FCGI_Record.contentLength);
 			return;
 		}
-		g_print("unknown type %u from %s (%u)\n", (guint) p[0],
-			from_server_to_string(ctx->from_server), ctx->con_id);
+		g_print("unknown type %u from %s (%u, %u)\n", (guint) p[0],
+			from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 		break;
 	
 	default:
-		g_print("packet from %s (%u): type: %s, id: 0x%x, contentLength: 0x%x\n",
+		g_print("packet from %s (%u, %u): type: %s, contentLength: 0x%x\n",
 			from_server_to_string(ctx->from_server), ctx->con_id,
-			fcgi_type2string(ctx->FCGI_Record.type),
 			(guint) ctx->FCGI_Record.requestID,
+			fcgi_type2string(ctx->FCGI_Record.type),
 			(guint) ctx->FCGI_Record.contentLength
 			);
-		log_raw("packet data", ctx->from_server, ctx->con_id, g_string_set_const(&tmp1, (gchar*) p, pe - p));
+		log_raw("packet data", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
 	}
 }
@@ -258,19 +264,19 @@ void fcgi_context_append(gpointer _ctx, const gchar* buf, gssize buflen) {
 
 	for (;;) {
 		data = (guint8*) ctx->buffer->str;
-	
+
 		if (ctx->buffer->len < FCGI_HEADER_LEN) return;
-	
+
 		ctx->FCGI_Record.version = data[0];
 		ctx->FCGI_Record.type = data[1];
 		ctx->FCGI_Record.requestID = (data[2] << 8) | (data[3]);
 		ctx->FCGI_Record.contentLength = (data[4] << 8) | (data[5]);
 		ctx->FCGI_Record.paddingLength = data[6];
 		/* ignore data[7] */
-	
+
 		total_len = FCGI_HEADER_LEN + ctx->FCGI_Record.contentLength + ctx->FCGI_Record.paddingLength;
 		if (ctx->buffer->len < total_len) return;
-	
+
 		fcgi_packet_parse(ctx, (guint8*) (FCGI_HEADER_LEN + ctx->buffer->str), (guint8*) (ctx->FCGI_Record.contentLength + FCGI_HEADER_LEN + ctx->buffer->str));
 		g_string_erase(ctx->buffer, 0, total_len);
 	}

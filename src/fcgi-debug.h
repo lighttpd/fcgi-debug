@@ -107,8 +107,8 @@ void stream_append(server *srv, stream *s, char *buf, gssize bufsize);
 gssize stream_write(server *srv, stream *s);
 
 /* log.c */
-void log_raw(const gchar *head, gboolean from_server, guint con_id, GString *data);
-void log_raw_split(const gchar *head, gboolean from_server, guint con_id, GString *data);
+void log_raw(const gchar *head, gboolean from_server, guint con_id, guint req_id, GString *data);
+void log_raw_split(const gchar *head, gboolean from_server, guint con_id, guint req_id, GString *data);
 
 /* debug-fastcgi.c */
 void setup_debug_fastcgi(connection *con);

@@ -1,18 +1,22 @@
 #include "fcgi-debug.h"
 
 void stream_init(server *srv, stream *s1, stream *s2, int fd1, int fd2, ev_io_cb cb1, ev_io_cb cb2, void* data) {
+	ev_io *w1, *w2;
 	UNUSED(srv);
+
 	fd_init(fd1);
 	fd_init(fd2);
 	s1->other = s2;
 	s2->other = s1;
 	s1->fd = fd1;
 	s2->fd = fd2;
-	ev_io *w1 = &s1->watcher, *w2 = &s2->watcher;
+
+	w1 = &s1->watcher; w2 = &s2->watcher;
 	ev_io_init(w1, cb1, fd1, 0);
 	ev_io_init(w2, cb2, fd2, 0);
 	w1->data = data;
 	w2->data = data;
+
 	s1->buffer = g_string_sized_new(0);
 	s2->buffer = g_string_sized_new(0);
 }
@@ -44,7 +48,7 @@ void stream_start(server *srv, stream *s) {
 	ev_io_add_events(srv->loop, &s->watcher, events);
 }
 
-gssize stream_closed(server *srv, stream *s) {
+static gssize stream_closed(server *srv, stream *s) {
 	ev_io_stop(srv->loop, &s->watcher);
 	if (s->fd != -1) {
 		shutdown(s->fd, SHUT_RDWR);
