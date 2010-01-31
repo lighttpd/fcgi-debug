@@ -169,7 +169,7 @@ static void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		log_raw_split("data", ctx->from_server, ctx->con_id, ctx->FCGI_Record.requestID, g_string_set_const(&tmp1, (gchar*) p, pe - p));
 		break;
-	
+
 	case FCGI_GET_VALUES: {
 		guint len1, len2;
 		GString *s1, *s2;
@@ -203,7 +203,7 @@ static void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		break;
 	}
-	
+
 	case FCGI_GET_VALUES_RESULT: {
 		guint len1, len2;
 		GString *s1, *s2;
@@ -231,7 +231,7 @@ static void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		}
 		break;
 	}
-	
+
 	case FCGI_UNKNOWN_TYPE:
 		if (ctx->FCGI_Record.contentLength != 8) {
 			g_print("wrong FCGI_UNKNOWN_TYPE size from %s (%u, %u): %u\n",
@@ -241,7 +241,7 @@ static void fcgi_packet_parse(fcgi_context *ctx, guint8 *p, guint8 *pe) {
 		g_print("unknown type %u from %s (%u, %u)\n", (guint) p[0],
 			from_server_to_string(ctx->from_server), ctx->con_id, (guint) ctx->FCGI_Record.requestID);
 		break;
-	
+
 	default:
 		g_print("packet from %s (%u, %u): type: %s, contentLength: 0x%x\n",
 			from_server_to_string(ctx->from_server), ctx->con_id,
