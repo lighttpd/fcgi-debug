@@ -48,11 +48,6 @@ ENDIF(HAVE_EV_H)
 # glib/gthread
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.12)
 
-ADD_DEFINITIONS(
-  -DPACKAGE_NAME="\\"${CMAKE_PROJECT_NAME}\\""
-  -DPACKAGE_VERSION="\\"${CPACK_PACKAGE_VERSION}\\""
-  )
-
 ## Write out config.h
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
