@@ -1,19 +1,19 @@
-.TH fcgi-debug 1 "Feb  3, 2009"
+.TH fcgi\-debug 1 "Feb  3, 2009"
 .SH NAME
-fcgi-debug \- debugs fastcgi streams
+fcgi\-debug \- debugs fastcgi streams
 .SH OPTIONS
 The fastcgi binary you want to debug
 .SH DESCRIPTION
-fcgi-debug helps you to trace what happens with your fastcgi programs without having to strace them;
+fcgi\-debug helps you to trace what happens with your fastcgi programs without having to strace them;
 it just sits between webserver and your fastcgi program and forwards all content while analysing it.
 
-For running you probably want spawn-fcgi (either from lighttpd, or from https://cgit.stbuehler.de/gitosis/spawn-fcgi/about/)
+For running you probably want spawn\-fcgi (either from lighttpd, or from https://cgit.stbuehler.de/gitosis/spawn\-fcgi/about/)
 .SH EXAMPLE
 Example usage (starts a fastcgi server listening on port 1026):
 
-spawn-fcgi -C 0 -p 1026 -n -- /usr/bin/fcgi-debug /usr/bin/php5-cgi
+spawn\-fcgi \-C 0 \-p 1026 \-n \-\- /usr/bin/fcgi\-debug /usr/bin/php5\-cgi
 .SH AUTHOR
-fcgi-debug was written by Stefan Bühler.
+fcgi\-debug was written by Stefan Bühler.
 .PP
-This manual page was written by Stefan B\"uhler <stbuehler@web.de>,
+This manual page was written by Stefan Bühler <stbuehler@web.de>
 for the Debian project (but may be used by others).
