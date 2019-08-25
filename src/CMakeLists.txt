@@ -9,21 +9,31 @@ INCLUDE(CPack)
 INCLUDE(FindPkgConfig)
 
 INCLUDE(LighttpdMacros)
-cmake_policy(SET CMP0005 OLD)
 
 OPTION(BUILD_STATIC "build a static fcgi-debug")
 
 IF(CMAKE_COMPILER_IS_GNUCC)
-	OPTION(BUILD_EXTRA_WARNINGS "extra warnings")
-
-	IF(BUILD_EXTRA_WARNINGS)
-		SET(WARN_FLAGS "-g -O2 -g2 -Wall -Wmissing-declarations -Wdeclaration-after-statement -Wcast-align -Winline -Wsign-compare -Wnested-externs -Wpointer-arith -Wformat-security")
-		# -Wl,--as-needed
-		# -Werror -Wbad-function-cast -Wmissing-prototypes
-	ELSE(BUILD_EXTRA_WARNINGS)
-		SET(WARN_FLAGS "")
-	ENDIF(BUILD_EXTRA_WARNINGS)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -g -Wshadow -W -pedantic")
+	SET(CMAKE_C_FLAGS_RELEASE        "${CMAKE_C_FLAGS_RELEASE}     -O2")
+	SET(CMAKE_C_FLAGS_DEBUG          "${CMAKE_C_FLAGS_DEBUG}       -O0")
+	SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_WITHDEBINFO} -O2")
+	ADD_DEFINITIONS(-D_GNU_SOURCE)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+OPTION(BUILD_EXTRA_WARNINGS "extra warnings")
+
+# default to ON
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Default value for ``POSITION_INDEPENDENT_CODE`` of targets.")
+
+IF(BUILD_EXTRA_WARNINGS)
+	SET(WARN_CFLAGS "-g -O2 -g2 -Wall -Wmissing-declarations -Wdeclaration-after-statement -Wcast-align -Wsign-compare -Wnested-externs -Wpointer-arith -Wmissing-prototypes -Wshadow -Wno-pointer-sign -Wformat-security")
+	SET(WARN_LDFLAGS "-g -O2 -g2 -Wall -Wl,--as-needed -Wl,--no-undefined")
+	# -Wl,--as-needed
+	# -Werror -Wbad-function-cast -Wmissing-prototypes
+ELSE(BUILD_EXTRA_WARNINGS)
+	SET(WARN_CFLAGS "")
+	SET(WARN_LDFLAGS "")
+ENDIF(BUILD_EXTRA_WARNINGS)
 
 ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES)
 
@@ -66,6 +76,8 @@ ADD_EXECUTABLE(fcgi-debug
 	parse-fastcgi.c
 )
 
+TARGET_USE_PACKAGE(fcgi-debug "" "" "${WARN_LDFLAGS}" "${WARN_CFLAGS}")
+
 IF(BUILD_STATIC)
 	ADD_TARGET_PROPERTIES(fcgi-debug LINK_FLAGS -static)
 
@@ -98,16 +110,8 @@ ELSE(BUILD_STATIC)
 	)
 ENDIF(BUILD_STATIC)
 
-IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -g -Wshadow -W -pedantic ${WARN_FLAGS}")
-  SET(CMAKE_C_FLAGS_RELEASE        "${CMAKE_C_FLAGS_RELEASE}     -O2")
-  SET(CMAKE_C_FLAGS_DEBUG          "${CMAKE_C_FLAGS_DEBUG}       -O0")
-  SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_WITHDEBINFO} -O2")
-  ADD_DEFINITIONS(-D_GNU_SOURCE)
-ENDIF(CMAKE_COMPILER_IS_GNUCC)
-
 #SET_TARGET_PROPERTIES(fcgi-debug PROPERTIES CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
 INSTALL(TARGETS fcgi-debug
 	RUNTIME DESTINATION bin
-	)
+)
